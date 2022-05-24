@@ -533,6 +533,41 @@ upb_CType upb_FieldDef_CType(const upb_FieldDef* f) {
   UPB_UNREACHABLE();
 }
 
+const char* upb_FieldDef_TypeString(const upb_FieldDef* f) {
+  switch (f->type_) {
+    case kUpb_FieldType_Double:
+      return "double";
+    case kUpb_FieldType_Float:
+      return "float";
+    case kUpb_FieldType_Int64:
+    case kUpb_FieldType_SInt64:
+    case kUpb_FieldType_SFixed64:
+      return "int64";
+    case kUpb_FieldType_Int32:
+    case kUpb_FieldType_SFixed32:
+    case kUpb_FieldType_SInt32:
+      return "int32";
+    case kUpb_FieldType_UInt64:
+    case kUpb_FieldType_Fixed64:
+      return "uint64";
+    case kUpb_FieldType_UInt32:
+    case kUpb_FieldType_Fixed32:
+      return "uint32";
+    case kUpb_FieldType_Enum:
+      return "enum";
+    case kUpb_FieldType_Bool:
+      return "bool";
+    case kUpb_FieldType_String:
+      return "string";
+    case kUpb_FieldType_Bytes:
+      return "bytes";
+    case kUpb_FieldType_Group:
+    case kUpb_FieldType_Message:
+      return "message";
+  }
+  UPB_UNREACHABLE();
+}
+
 upb_FieldType upb_FieldDef_Type(const upb_FieldDef* f) { return f->type_; }
 
 uint32_t upb_FieldDef_Index(const upb_FieldDef* f) { return f->index_; }

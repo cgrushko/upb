@@ -176,6 +176,20 @@ static bool PyUpb_PyToUpbEnum(PyObject* obj, const upb_EnumDef* e,
   }
 }
 
+bool PyUpb_IsNumpyNdarray(PyObject* obj, const upb_FieldDef* f) {
+  PyObject* type_name_obj =
+      PyObject_GetAttrString((PyObject*)Py_TYPE(obj), "__name__");
+  bool is_ndarray = false;
+  if (!strcmp(PyUpb_GetStrData(type_name_obj), "ndarray")) {
+    PyErr_Format(PyExc_TypeError,
+                 "%s has type ndarray, but expected one of:", obj,
+                 upb_FieldDef_TypeString(f));
+    is_ndarray = true;
+  }
+  Py_DECREF(type_name_obj);
+  return is_ndarray;
+}
+
 bool PyUpb_PyToUpb(PyObject* obj, const upb_FieldDef* f, upb_MessageValue* val,
                    upb_Arena* arena) {
   switch (upb_FieldDef_CType(f)) {
@@ -190,12 +204,21 @@ bool PyUpb_PyToUpb(PyObject* obj, const upb_FieldDef* f, upb_MessageValue* val,
     case kUpb_CType_UInt64:
       return PyUpb_GetUint64(obj, &val->uint64_val);
     case kUpb_CType_Float:
+      if (PyUpb_IsNumpyNdarray(obj, f)) {
+        return false;
+      }
       val->float_val = PyFloat_AsDouble(obj);
       return !PyErr_Occurred();
     case kUpb_CType_Double:
+      if (PyUpb_IsNumpyNdarray(obj, f)) {
+        return false;
+      }
       val->double_val = PyFloat_AsDouble(obj);
       return !PyErr_Occurred();
     case kUpb_CType_Bool:
+      if (PyUpb_IsNumpyNdarray(obj, f)) {
+        return false;
+      }
       val->bool_val = PyLong_AsLong(obj);
       return !PyErr_Occurred();
     case kUpb_CType_Bytes: {
