@@ -1217,3 +1217,18 @@ pkg_files(
 # )
 #
 # end:google_only
+
+cc_library(
+  name = "jni_headers",
+  srcs = [
+    "@local_jdk//:jni_header",
+    "@local_jdk//:jni_md_header-darwin",
+  ],
+  includes = [
+    "external/local_jdk/include",
+    "external/local_jdk/include/darwin",
+  ],
+  visibility = [
+    "//visibility:public",
+  ],
+)

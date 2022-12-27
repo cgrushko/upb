@@ -1,0 +1,32 @@
+cc_library(
+    name = "javaupbruntime-lib",
+    srcs = glob(["*.cpp"]) + [ 
+        "@local_jdk//:jni_header",
+        "@local_jdk//:jni_md_header-darwin",
+
+    ],
+    hdrs = glob(["*.h"]),
+    visibility = [
+      "//java/runtime/main/com/facebook/upb/runtime:__pkg__",
+      "//java/runtime/test/com/facebook/upb/runtime:__pkg__"
+      ],
+    # includes = [ "external/local_jdk/include/darwin" ],
+    includes = [ "../external/local_jdk/include", "../external/local_jdk/include/darwin" ],
+ deps = [
+    "//:jni_headers",
+    "//:upb",
+    "//:message_internal",
+  ],
+  # linkstatic = 1,
+  alwayslink = True,
+)
+
+cc_binary(
+    name = "libjavaupbruntime.dylib",
+    deps = [ ":javaupbruntime-lib" ],
+    linkshared = 1,
+    visibility = [
+      "//java/runtime/main/com/facebook/upb/runtime:__pkg__",
+      "//java/runtime/test/com/facebook/upb/runtime:__pkg__"
+      ],
+)

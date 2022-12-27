@@ -1,0 +1,12 @@
+java_test(
+    name = "ArenaTest",
+    srcs = ["ArenaTest.java"],
+    test_class = "com.facebook.upb.runtime.ArenaTest",
+    deps = [
+        "//java/runtime/main/com/facebook/upb/runtime:runtime",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+    data = ["//java/runtime/main/com/facebook/upb/runtime/jni:libjavaupbruntime.dylib"],
+    jvm_flags = ["-Djava.library.path=$${RUNPATH}/java/runtime/main/com/facebook/upb/runtime/jni"],
+)

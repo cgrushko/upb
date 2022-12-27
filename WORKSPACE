@@ -84,3 +84,36 @@ pip_parse(
 
 load("@pip_deps//:requirements.bzl", "install_deps")
 install_deps()
+
+load("@system_python//:fuzzing_py.bzl", "fuzzing_py_install_deps")
+fuzzing_py_install_deps()
+
+load("@rules_jvm_external//:defs.bzl", "maven_install")
+maven_install(
+    artifacts = [    "com.google.truth:truth:1.1.2",
+    "junit:junit:4.13.2",
+],
+    # For updating instructions, see:
+    # https://github.com/bazelbuild/rules_jvm_external#updating-maven_installjson
+    # maven_install_json = "//:maven_install.json",
+    repositories = [
+        "https://repo1.maven.org/maven2",
+        "https://repo.maven.apache.org/maven2",
+    ],
+)
+
+load("@maven//:defs.bzl", "pinned_maven_install")
+pinned_maven_install()
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "fmeum_rules_jni",
+    sha256 = "9a387a066f683a8aac4d165917dc7fe15ec2a20931894a97e153a9caab6123ca",
+    strip_prefix = "rules_jni-0.4.0",
+    url = "https://github.com/fmeum/rules_jni/archive/refs/tags/v0.4.0.tar.gz",
+)
+
+load("@fmeum_rules_jni//jni:repositories.bzl", "rules_jni_dependencies")
+
+rules_jni_dependencies()
