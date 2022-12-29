@@ -135,7 +135,7 @@ class FieldGeneratorMap {
 template <typename FieldGeneratorType>
 inline const FieldGeneratorType& FieldGeneratorMap<FieldGeneratorType>::get(
     const FieldDescriptor* field) const {
-  GOOGLE_ABSL_CHECK_EQ(field->containing_type(), descriptor_);
+  GOOGLE_CHECK_EQ(field->containing_type(), descriptor_);
   return *field_generators_[field->index()];
 }
 

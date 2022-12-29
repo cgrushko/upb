@@ -345,7 +345,7 @@ void ImmutableEnumFieldGenerator::GenerateMergingCode(
         "  set$capitalized_name$Value(other.get$capitalized_name$Value());\n"
         "}\n");
   } else {
-    GOOGLE_ABSL_LOG(FATAL) << "Can't reach here.";
+    GOOGLE_LOG(FATAL) << "Can't reach here.";
   }
 }
 
@@ -429,7 +429,7 @@ ImmutableEnumOneofFieldGenerator::~ImmutableEnumOneofFieldGenerator() {}
 void ImmutableEnumOneofFieldGenerator::GenerateMembers(
     io::Printer* printer) const {
   PrintExtraFieldInfo(variables_, printer);
-  GOOGLE_ABSL_DCHECK(HasHazzer(descriptor_));
+  GOOGLE_DCHECK(HasHazzer(descriptor_));
   WriteFieldAccessorDocComment(printer, descriptor_, HAZZER);
   printer->Print(variables_,
                  "$deprecation$public boolean ${$has$capitalized_name$$}$() {\n"
@@ -464,7 +464,7 @@ void ImmutableEnumOneofFieldGenerator::GenerateMembers(
 
 void ImmutableEnumOneofFieldGenerator::GenerateBuilderMembers(
     io::Printer* printer) const {
-  GOOGLE_ABSL_DCHECK(HasHazzer(descriptor_));
+  GOOGLE_DCHECK(HasHazzer(descriptor_));
   WriteFieldAccessorDocComment(printer, descriptor_, HAZZER);
   printer->Print(variables_,
                  "@java.lang.Override\n"

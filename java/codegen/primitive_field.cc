@@ -449,7 +449,7 @@ void ImmutablePrimitiveFieldGenerator::GenerateEqualsCode(
     case JAVATYPE_ENUM:
     case JAVATYPE_MESSAGE:
     default:
-      GOOGLE_ABSL_LOG(FATAL) << "Can't get here.";
+      GOOGLE_LOG(FATAL) << "Can't get here.";
       break;
   }
 }
@@ -500,7 +500,7 @@ void ImmutablePrimitiveFieldGenerator::GenerateHashCode(
     case JAVATYPE_ENUM:
     case JAVATYPE_MESSAGE:
     default:
-      GOOGLE_ABSL_LOG(FATAL) << "Can't get here.";
+      GOOGLE_LOG(FATAL) << "Can't get here.";
       break;
   }
 }
@@ -527,7 +527,7 @@ ImmutablePrimitiveOneofFieldGenerator::
 void ImmutablePrimitiveOneofFieldGenerator::GenerateMembers(
     io::Printer* printer) const {
   PrintExtraFieldInfo(variables_, printer);
-  GOOGLE_ABSL_DCHECK(HasHazzer(descriptor_));
+  GOOGLE_DCHECK(HasHazzer(descriptor_));
   WriteFieldAccessorDocComment(printer, descriptor_, HAZZER);
   printer->Print(variables_,
                  "@java.lang.Override\n"
@@ -550,7 +550,7 @@ void ImmutablePrimitiveOneofFieldGenerator::GenerateMembers(
 
 void ImmutablePrimitiveOneofFieldGenerator::GenerateBuilderMembers(
     io::Printer* printer) const {
-  GOOGLE_ABSL_DCHECK(HasHazzer(descriptor_));
+  GOOGLE_DCHECK(HasHazzer(descriptor_));
   WriteFieldAccessorDocComment(printer, descriptor_, HAZZER);
   printer->Print(variables_,
                  "$deprecation$public boolean ${$has$capitalized_name$$}$() {\n"

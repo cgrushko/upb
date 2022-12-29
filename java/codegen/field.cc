@@ -186,7 +186,7 @@ static inline void ReportUnexpectedPackedFieldsCall(io::Printer* printer) {
   //     but this method should be overridden.
   //   - This FieldGenerator doesn't support packing, and this method
   //     should never have been called.
-  GOOGLE_ABSL_LOG(FATAL) << "GenerateBuilderParsingCodeFromPacked() "
+  GOOGLE_LOG(FATAL) << "GenerateBuilderParsingCodeFromPacked() "
                   << "called on field generator that does not support packing.";
 }
 

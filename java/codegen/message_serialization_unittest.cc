@@ -77,7 +77,7 @@ int CompileJavaProto(std::string proto_file_name) {
 }
 
 TEST(MessageSerializationTest, CollapseAdjacentExtensionRanges) {
-  GOOGLE_ABSL_CHECK_EQ(CompileJavaProto("message_serialization_unittest.proto"), 0);
+  GOOGLE_CHECK_EQ(CompileJavaProto("message_serialization_unittest.proto"), 0);
 
   std::string java_source;
   GOOGLE_ABSL_CHECK_OK(File::GetContents(

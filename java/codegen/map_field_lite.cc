@@ -49,16 +49,16 @@ namespace java {
 namespace {
 
 const FieldDescriptor* KeyField(const FieldDescriptor* descriptor) {
-  GOOGLE_ABSL_CHECK_EQ(FieldDescriptor::TYPE_MESSAGE, descriptor->type());
+  GOOGLE_CHECK_EQ(FieldDescriptor::TYPE_MESSAGE, descriptor->type());
   const Descriptor* message = descriptor->message_type();
-  GOOGLE_ABSL_CHECK(message->options().map_entry());
+  GOOGLE_CHECK(message->options().map_entry());
   return message->map_key();
 }
 
 const FieldDescriptor* ValueField(const FieldDescriptor* descriptor) {
-  GOOGLE_ABSL_CHECK_EQ(FieldDescriptor::TYPE_MESSAGE, descriptor->type());
+  GOOGLE_CHECK_EQ(FieldDescriptor::TYPE_MESSAGE, descriptor->type());
   const Descriptor* message = descriptor->message_type();
-  GOOGLE_ABSL_CHECK(message->options().map_entry());
+  GOOGLE_CHECK(message->options().map_entry());
   return message->map_value();
 }
 
