@@ -39,6 +39,7 @@
 #include <string>
 #include <vector>
 
+#include "upb/reflection/def.hpp"
 #include "google/protobuf/compiler/java/options.h"
 #include "google/protobuf/port.h"
 
@@ -69,7 +70,11 @@ namespace java {
 class FileGenerator {
  public:
   FileGenerator(const FileDescriptor* file, const Options& options,
+#ifndef JUPB
                 bool immutable_api = true);
+#else
+                const upb::DefPool& upbPool32, const upb::DefPool& upbPool64, bool immutable_api = true);
+#endif
   FileGenerator(const FileGenerator&) = delete;
   FileGenerator& operator=(const FileGenerator&) = delete;
   ~FileGenerator();

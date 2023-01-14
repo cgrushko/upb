@@ -76,13 +76,13 @@ ImmutableMessageLiteGenerator::ImmutableMessageLiteGenerator(
       context_(context),
       name_resolver_(context->GetNameResolver()),
       field_generators_(descriptor, context_) {
-  GOOGLE_CHECK(!HasDescriptorMethods(descriptor->file(), context->EnforceLite()))
+  ABSL_CHECK(!HasDescriptorMethods(descriptor->file(), context->EnforceLite()))
       << "Generator factory error: A lite message generator is used to "
          "generate non-lite messages.";
   for (int i = 0; i < descriptor_->field_count(); i++) {
     if (IsRealOneof(descriptor_->field(i))) {
       const OneofDescriptor* oneof = descriptor_->field(i)->containing_oneof();
-      GOOGLE_CHECK(oneofs_.emplace(oneof->index(), oneof).first->second == oneof);
+      ABSL_CHECK(oneofs_.emplace(oneof->index(), oneof).first->second == oneof);
     }
   }
 }
@@ -131,6 +131,7 @@ void ImmutableMessageLiteGenerator::GenerateInterface(io::Printer* printer) {
     printer->Print("@com.google.protobuf.Internal.ProtoNonnullApi\n");
   }
   if (descriptor_->extension_range_count() > 0) {
+#ifndef JUPB
     printer->Print(
         variables,
         "$deprecation$public interface ${$$classname$OrBuilder$}$ extends \n"
@@ -138,12 +139,21 @@ void ImmutableMessageLiteGenerator::GenerateInterface(io::Printer* printer) {
         "     com.google.protobuf.GeneratedMessageLite.\n"
         "          ExtendableMessageOrBuilder<\n"
         "              $classname$, $classname$.Builder> {\n");
+#endif
   } else {
+#ifndef JUPB
     printer->Print(
         variables,
         "$deprecation$public interface ${$$classname$OrBuilder$}$ extends\n"
         "    $extra_interfaces$\n"
         "    com.google.protobuf.MessageLiteOrBuilder {\n");
+#else
+    printer->Print(
+        variables,
+        "$deprecation$public interface ${$$classname$OrBuilder$}$ extends\n"
+        "    $extra_interfaces$\n"
+        "    com.facebook.upb.runtime.JupbMessageLiteOrBuilder {\n");
+#endif
   }
   printer->Annotate("{", "}", descriptor_);
 
@@ -191,6 +201,7 @@ void ImmutableMessageLiteGenerator::Generate(io::Printer* printer) {
   // The builder_type stores the super type name of the nested Builder class.
   std::string builder_type;
   if (descriptor_->extension_range_count() > 0) {
+#ifndef JUPB
     printer->Print(
         variables,
         "$deprecation$public $static$final class ${$$classname$$}$ extends\n"
@@ -201,7 +212,9 @@ void ImmutableMessageLiteGenerator::Generate(io::Printer* printer) {
     builder_type = absl::Substitute(
         "com.google.protobuf.GeneratedMessageLite.ExtendableBuilder<$0, ?>",
         name_resolver_->GetImmutableClassName(descriptor_));
+#endif
   } else {
+#ifndef JUPB
     printer->Print(
         variables,
         "$deprecation$public $static$final class ${$$classname$$}$ extends\n"
@@ -211,9 +224,21 @@ void ImmutableMessageLiteGenerator::Generate(io::Printer* printer) {
         "    $classname$OrBuilder {\n");
 
     builder_type = "com.google.protobuf.GeneratedMessageLite.Builder";
+#else
+    printer->Print(
+        variables,
+        "$deprecation$public $static$final class ${$$classname$$}$ extends\n"
+        "    com.facebook.upb.runtime.UpbMessage implements\n"
+        "    $extra_interfaces$\n"
+        "    $classname$OrBuilder {\n");
+#endif
   }
   printer->Annotate("{", "}", descriptor_);
   printer->Indent();
+
+#ifdef JUPB
+  GenerateMinitableMethod(printer);
+#endif
 
   GenerateConstructor(printer);
 
@@ -232,6 +257,7 @@ void ImmutableMessageLiteGenerator::Generate(io::Printer* printer) {
     messageGenerator.Generate(printer);
   }
 
+#ifndef JUPB
   // Integers for bit fields.
   int totalBits = 0;
   for (int i = 0; i < descriptor_->field_count(); i++) {
@@ -243,6 +269,7 @@ void ImmutableMessageLiteGenerator::Generate(io::Printer* printer) {
     printer->Print("private int $bit_field_name$;\n", "bit_field_name",
                    GetBitFieldName(i));
   }
+#endif
 
   // oneof
   absl::flat_hash_map<absl::string_view, std::string> vars = {{"{", ""},
@@ -351,6 +378,7 @@ void ImmutableMessageLiteGenerator::Generate(io::Printer* printer) {
     printer->Print("private byte memoizedIsInitialized = 2;\n");
   }
 
+#ifndef JUPB
   printer->Print(
       "@java.lang.Override\n"
       "@java.lang.SuppressWarnings({\"unchecked\", \"fallthrough\"})\n"
@@ -439,20 +467,24 @@ void ImmutableMessageLiteGenerator::Generate(io::Printer* printer) {
       "}\n"
       "\n",
       "classname", name_resolver_->GetImmutableClassName(descriptor_));
+#endif
 
   printer->Print(
       "\n"
       "// @@protoc_insertion_point(class_scope:$full_name$)\n",
       "full_name", descriptor_->full_name());
 
+#ifndef JUPB
   // Carefully initialize the default instance in such a way that it doesn't
   // conflict with other initialization.
   printer->Print("private static final $classname$ DEFAULT_INSTANCE;\n",
                  "classname",
                  name_resolver_->GetImmutableClassName(descriptor_));
+#endif
 
   printer->Print(
       "static {\n"
+#ifndef JUPB
       "  $classname$ defaultInstance = new $classname$();\n"
       "  // New instances are implicitly immutable so no need to make\n"
       "  // immutable.\n"
@@ -462,16 +494,26 @@ void ImmutableMessageLiteGenerator::Generate(io::Printer* printer) {
       // without using Java reflection.
       "  com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(\n"
       "    $classname$.class, defaultInstance);\n"
+#endif
       "}\n"
       "\n",
       "classname", descriptor_->name());
 
+#ifndef JUPB
   printer->Print(
       "public static $classname$ getDefaultInstance() {\n"
       "  return DEFAULT_INSTANCE;\n"
       "}\n"
       "\n",
       "classname", name_resolver_->GetImmutableClassName(descriptor_));
+#else
+  printer->Print(
+      "public static $classname$ getDefaultInstance() {\n"
+      "  return new $classname$(new com.facebook.upb.runtime.Arena());\n"
+      "}\n"
+      "\n",
+      "classname", name_resolver_->GetImmutableClassName(descriptor_));
+#endif
 
   // 'of' method for Wrappers
   if (IsWrappersProtoFile(descriptor_->file())) {
@@ -603,6 +645,7 @@ void ImmutableMessageLiteGenerator::GenerateDynamicMethodNewBuildMessageInfo(
 
 void ImmutableMessageLiteGenerator::GenerateParseFromMethods(
     io::Printer* printer) {
+#ifndef JUPB
   printer->Print(
       "public static $classname$ parseFrom(\n"
       "    java.nio.ByteBuffer data)\n"
@@ -681,11 +724,13 @@ void ImmutableMessageLiteGenerator::GenerateParseFromMethods(
       "}\n"
       "\n",
       "classname", name_resolver_->GetImmutableClassName(descriptor_));
+#endif
 }
 
 // ===================================================================
 
 void ImmutableMessageLiteGenerator::GenerateBuilder(io::Printer* printer) {
+#ifndef JUPB
   printer->Print(
       "public static Builder newBuilder() {\n"
       "  return (Builder) DEFAULT_INSTANCE.createBuilder();\n"
@@ -695,7 +740,17 @@ void ImmutableMessageLiteGenerator::GenerateBuilder(io::Printer* printer) {
       "}\n"
       "\n",
       "classname", name_resolver_->GetImmutableClassName(descriptor_));
-
+#else
+  printer->Print(
+      "public static Builder newBuilder() {\n"
+      "  return new Builder(getDefaultInstance());\n"
+      "}\n"
+      "public static Builder newBuilder($classname$ prototype) {\n"
+      "  return new Builder(prototype);\n"
+      "}\n"
+      "\n",
+      "classname", name_resolver_->GetImmutableClassName(descriptor_));
+#endif
   MessageBuilderLiteGenerator builderGenerator(descriptor_, context_);
   builderGenerator.Generate(printer);
 }
@@ -723,12 +778,31 @@ void ImmutableMessageLiteGenerator::GenerateExtensionRegistrationCode(
 }
 
 // ===================================================================
+#ifdef JUPB
+void ImmutableMessageLiteGenerator::GenerateMinitableMethod(io::Printer* printer) {
+  std::string m32 = context_->GetUpbMessage32(*descriptor_).MiniDescriptorEncode();
+  std::string m64 = context_->GetUpbMessage64(*descriptor_).MiniDescriptorEncode();
+
+  printer->Print("public static com.facebook.upb.runtime.Minitable minitable() {\n", "classname", descriptor_->name());
+  printer->Indent();
+  printer->Print("return new com.facebook.upb.runtime.Minitable(Messages.UPB_STR(\"$m32$\", \"$m64$\"));\n", "m32", m32, "m64", m64);
+  printer->Outdent();
+  printer->Print("}\n");
+}
+#endif
+// ===================================================================
 void ImmutableMessageLiteGenerator::GenerateConstructor(io::Printer* printer) {
+#ifndef JUPB
   printer->Print("private $classname$() {\n", "classname", descriptor_->name());
   printer->Indent();
 
   // Initialize all fields to default.
   GenerateInitializers(printer);
+#else
+  printer->Print("private $classname$(com.facebook.upb.runtime.Arena arena) {\n", "classname", descriptor_->name());
+  printer->Indent();
+  printer->Print("super(arena, minitable());\n");
+#endif
 
   printer->Outdent();
   printer->Print("}\n");
@@ -736,6 +810,7 @@ void ImmutableMessageLiteGenerator::GenerateConstructor(io::Printer* printer) {
 
 // ===================================================================
 void ImmutableMessageLiteGenerator::GenerateParser(io::Printer* printer) {
+#ifndef JUPB
   printer->Print(
       "private static volatile com.google.protobuf.Parser<$classname$> "
       "PARSER;\n"
@@ -744,6 +819,7 @@ void ImmutableMessageLiteGenerator::GenerateParser(io::Printer* printer) {
       "  return DEFAULT_INSTANCE.getParserForType();\n"
       "}\n",
       "classname", descriptor_->name());
+#endif
 }
 
 // ===================================================================

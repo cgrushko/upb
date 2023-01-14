@@ -26,27 +26,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "arena.h"
-#include "messages.h"
 #include "minitable.h"
 #include "jni_helper.h"
+// #include <android/log.h>
+#include "upb/upb.h"
+#include <array>
+#include <stdio.h>
+#include <stdlib.h>
+#include "upb/mini_table/decode.h"
 
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* _Nullable /* reserved */) {
-  JNIEnv* env;
+namespace Minitable {
 
-  if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
-    logErrorMessageAndDie(
-        "GetEnv failed");
+jlong upb_MiniTable_Build(JNIEnv* env, jobject /* thisz */, jbyteArray serializedMinitable, jlong arenaPtr) {
+  void* data = env->GetPrimitiveArrayCritical(serializedMinitable, NULL);
+  assertNoPendingJniException(env);
+  jsize len = env->GetArrayLength(serializedMinitable);
+  assertNoPendingJniException(env);
+
+  upb_Status status;
+  jlong result = (jlong) upb_MiniTable_Build((const char*)data, len, (upb_Arena*)arenaPtr, &status);
+  if (!result) {
+    logErrorMessageAndDie(status.msg);
   }
-
-if (!env) {
-    logErrorMessageAndDie(
-        "Need to pass a valid JNIEnv pointer to initialization routine");
-  }
-
-
-  Arena::registerNatives(env);
-  Messages::registerNatives(env);
-  Minitable::registerNatives(env);
-  return JNI_VERSION_1_6;
+  env->ReleasePrimitiveArrayCritical(serializedMinitable, data, JNI_ABORT);
+  assertNoPendingJniException(env);
+  return result;
 }
+
+namespace {
+auto constexpr kClassName = "com/facebook/upb/runtime/Minitable";
+
+std::array<JNINativeMethod, 1> methods = {{
+    // long upb_MiniTable_Build(byte[] serializedMinitable, long arenaPtr);
+    {"upb_MiniTable_Build",
+     "([BJ)J",
+     (void*)Minitable::upb_MiniTable_Build},
+}};
+
+} // namespace
+
+void registerNatives(JNIEnv* env) {
+  jclass clazz = env->FindClass(kClassName);
+  assertNoPendingJniException(env);
+  env->RegisterNatives(clazz, methods.begin(), methods.size());
+  assertNoPendingJniException(env);
+}
+
+} // namespace Minitable

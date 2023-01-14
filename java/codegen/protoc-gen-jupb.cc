@@ -13,7 +13,7 @@
 #include "upb/mini_table/enum_internal.h"
 #include "upb/mini_table/extension_internal.h"
 #include "upbc/common.h"
-#include "upbc/file_layout.h"
+#include "upb/reflection/def.hpp"
 #include "upbc/names.h"
 #include "google/protobuf/compiler/java/generator.h"
 

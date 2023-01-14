@@ -68,13 +68,13 @@ MessageBuilderLiteGenerator::MessageBuilderLiteGenerator(
       context_(context),
       name_resolver_(context->GetNameResolver()),
       field_generators_(descriptor, context_) {
-  GOOGLE_CHECK(!HasDescriptorMethods(descriptor->file(), context->EnforceLite()))
+  ABSL_CHECK(!HasDescriptorMethods(descriptor->file(), context->EnforceLite()))
       << "Generator factory error: A lite message generator is used to "
          "generate non-lite messages.";
   for (int i = 0; i < descriptor_->field_count(); i++) {
     if (IsRealOneof(descriptor_->field(i))) {
       const OneofDescriptor* oneof = descriptor_->field(i)->containing_oneof();
-      GOOGLE_CHECK(oneofs_.emplace(oneof->index(), oneof).first->second == oneof);
+      ABSL_CHECK(oneofs_.emplace(oneof->index(), oneof).first->second == oneof);
     }
   }
 }
@@ -91,6 +91,7 @@ void MessageBuilderLiteGenerator::Generate(io::Printer* printer) {
       {"extendible",
        descriptor_->extension_range_count() > 0 ? "Extendable" : ""},
   };
+#ifndef JUPB
   printer->Print(
       vars,
       "public static final class ${$Builder$}$ extends\n"
@@ -98,6 +99,15 @@ void MessageBuilderLiteGenerator::Generate(io::Printer* printer) {
       "      $classname$, Builder> implements\n"
       "    $extra_interfaces$\n"
       "    $classname$OrBuilder {\n");
+#else
+  printer->Print(
+      vars,
+      "public static final class ${$Builder$}$ extends\n"
+      "    com.facebook.upb.runtime.UpbMessage.$extendible$Builder<\n"
+      "      $classname$, Builder> implements\n"
+      "    $extra_interfaces$\n"
+      "    $classname$OrBuilder {\n");
+#endif
   printer->Annotate("{", "}", descriptor_);
   printer->Indent();
 
@@ -149,6 +159,7 @@ void MessageBuilderLiteGenerator::Generate(io::Printer* printer) {
 
 void MessageBuilderLiteGenerator::GenerateCommonBuilderMethods(
     io::Printer* printer) {
+#ifndef JUPB
   printer->Print(
       "// Construct using $classname$.newBuilder()\n"
       "private Builder() {\n"
@@ -156,6 +167,15 @@ void MessageBuilderLiteGenerator::GenerateCommonBuilderMethods(
       "}\n"
       "\n",
       "classname", name_resolver_->GetImmutableClassName(descriptor_));
+#else
+  printer->Print(
+      "// Construct using $classname$.newBuilder()\n"
+      "private Builder($classname$ instance) {\n"
+      "  super(instance);\n"
+      "}\n"
+      "\n",
+      "classname", name_resolver_->GetImmutableClassName(descriptor_));
+#endif
 }
 
 // ===================================================================

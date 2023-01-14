@@ -55,6 +55,12 @@ public class Messages {
     is64bit = getIs64();
   }
 
+  public static long createMessage(Minitable minitable, Arena arena) {
+    return upb_Message_New(arena.pointer, minitable.pointer);
+  }
+
+  private static native long upb_Message_New(long arenaPtr, long minitablePtr);
+
   public static native long _upb_Message_New(
       long minitablesPointer, int fileIndex, int msgIndex, long arenaPointer);
 
@@ -66,8 +72,12 @@ public class Messages {
     return UNSAFE.getFloat(pointer);
   }
 
-  public static int UPB_PTR_AT_int(long pointer) {
-    return UNSAFE.getInt(pointer);
+  public static int getInt32(long msgPointer, long offset) {
+    return UNSAFE.getInt(msgPointer + offset);
+  }
+
+  public static int getInt32(long msgPointer, long offset, int hasBitIndex, int defaultValue) {
+    return _upb_hasbit(msgPointer, hasBitIndex) ? UNSAFE.getInt(msgPointer + offset) : defaultValue;
   }
 
   public static double UPB_PTR_AT_double(long pointer) {
@@ -86,8 +96,13 @@ public class Messages {
     UNSAFE.putFloat(pointer, value);
   }
 
-  public static void UPB_PTR_AT_int(long pointer, int value) {
-    UNSAFE.putInt(pointer, value);
+  public static void setInt32(long msgPointer, long offset, int value) {
+    UNSAFE.putInt(msgPointer + offset, value);
+  }
+
+  public static void setInt32(long msgPointer, long offset, int hasBitIndex, int value) {
+    _upb_sethas(msgPointer, hasBitIndex);
+    UNSAFE.putInt(msgPointer + offset, value);
   }
 
   public static void UPB_PTR_AT_double(long pointer, double value) {
@@ -117,7 +132,13 @@ public class Messages {
     return is64bit ? size64 : size32;
   }
 
+  public static String UPB_STR(String str32, String str64) {
+    return is64bit ? str64 : str32;
+  }
+
   public static native void _upb_sethas(long messagePointer, int index);
+  public static native boolean _upb_hasbit(long messagePointer, int index);
+  public static native void _upb_clearhas(long messagePointer, int index);
 
   /** Don't call directly - use is64bit directly. */
   private static native boolean getIs64();

@@ -1,0 +1,15 @@
+# To run:
+# bazel build --check_visibility=false --linkopt=-Wl,-no_fixup_chains --host_linkopt "-framework CoreFoundation" --features=-supports_dynamic_linker --proto_toolchain_for_javalite=//bazel:jupb_toolchain --sandbox_debug --verbose_failures //java/runtime/test/com/facebook/upb:TinyProtoTest && bazel-bin/java/runtime/test/com/facebook/upb/TinyProtoTest
+java_test(
+    name = "TinyProtoTest",
+    srcs = ["TinyProtoTest.java"],
+    test_class = "com.facebook.upb.TinyProtoTest",
+    deps = [
+        "//upb/test:tiny_jupb_proto",
+        "//java/runtime/main/com/facebook/upb/runtime:runtime",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+    data = ["//java/runtime/main/com/facebook/upb/runtime/jni:libjavaupbruntime.dylib"],
+    jvm_flags = ["-Djava.library.path=$${RUNPATH}/java/runtime/main/com/facebook/upb/runtime/jni"],
+)

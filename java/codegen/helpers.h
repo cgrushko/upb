@@ -45,6 +45,10 @@
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/printer.h"
 
+#ifdef JUPB
+#include "upb/reflection/def.hpp"
+#endif
+
 // Must be last.
 #include "google/protobuf/port_def.inc"
 
@@ -283,6 +287,17 @@ std::string GenerateSetBit(int bitIndex);
 // bitfields for the given bit index.
 // Example: "bitField1_ = (bitField1_ & ~0x04)"
 std::string GenerateClearBit(int bitIndex);
+
+#ifdef JUPB
+// Generates the java code for the expression that returns the boolean value
+// of the bit of the shared bitfields for the given field descriptor.
+// Example: "((bitField1_ & 0x04) == 0x04)"
+std::string UpbGenerateGetBit(const upb::FieldDefPtr& field32, const upb::FieldDefPtr& field64);
+
+// Generates the java code for the expression that clears the bit of the shared
+// bitfields for the given bit field descriptor.
+std::string UpbGenerateClearBit(const upb::FieldDefPtr& field32, const upb::FieldDefPtr& field64);
+#endif
 
 // Does the same as GenerateGetBit but operates on the bit field on a local
 // variable. This is used by the builder to copy the value in the builder to

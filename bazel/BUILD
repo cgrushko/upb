@@ -24,6 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_proto//proto:defs.bzl", "proto_lang_toolchain", "proto_library")
 
 licenses(["notice"])
 
@@ -55,4 +56,30 @@ bzl_library(
         "@bazel_tools//tools/cpp:toolchain_utils.bzl",
         "@rules_proto//proto:defs",
     ],
+)
+
+# Use by calling
+# bazel build --check_visibility=false --linkopt=-Wl,-no_fixup_chains  //upb/test:empty_jupb_proto --proto_toolchain_for_javalite=//bazel:jupb_toolchain
+
+proto_lang_toolchain(
+    name = "jupb_toolchain",
+    # keep this in sync w/ LITE_WELL_KNOWN_PROTO_MAP in //:BUILD
+    blacklisted_protos = [
+        "@com_google_protobuf//:any_proto",
+        "@com_google_protobuf//:api_proto",
+        "@com_google_protobuf//:duration_proto",
+        "@com_google_protobuf//:empty_proto",
+        "@com_google_protobuf//:field_mask_proto",
+        "@com_google_protobuf//:source_context_proto",
+        "@com_google_protobuf//:struct_proto",
+        "@com_google_protobuf//:timestamp_proto",
+        "@com_google_protobuf//:type_proto",
+        "@com_google_protobuf//:wrappers_proto",
+    ],
+  progress_message = "Generating jupb proto_library %{label}",
+  command_line = "--PLUGIN_jupb_out=lite:$(OUT)",
+  plugin_format_flag = "--plugin=protoc-gen-PLUGIN_jupb=%s",
+  plugin = "//java/codegen:protoc-gen-jupb",
+    runtime = "//java/runtime/main/com/facebook/upb/runtime:runtime",
+    visibility = ["//visibility:public"],
 )

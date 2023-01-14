@@ -30,6 +30,8 @@
 
 #include "google/protobuf/compiler/java/map_field.h"
 
+#include "absl/log/absl_check.h"
+#include "absl/log/absl_log.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/compiler/java/context.h"
 #include "google/protobuf/compiler/java/doc_comment.h"
@@ -48,16 +50,16 @@ namespace java {
 namespace {
 
 const FieldDescriptor* KeyField(const FieldDescriptor* descriptor) {
-  GOOGLE_CHECK_EQ(FieldDescriptor::TYPE_MESSAGE, descriptor->type());
+  ABSL_CHECK_EQ(FieldDescriptor::TYPE_MESSAGE, descriptor->type());
   const Descriptor* message = descriptor->message_type();
-  GOOGLE_CHECK(message->options().map_entry());
+  ABSL_CHECK(message->options().map_entry());
   return message->map_key();
 }
 
 const FieldDescriptor* ValueField(const FieldDescriptor* descriptor) {
-  GOOGLE_CHECK_EQ(FieldDescriptor::TYPE_MESSAGE, descriptor->type());
+  ABSL_CHECK_EQ(FieldDescriptor::TYPE_MESSAGE, descriptor->type());
   const Descriptor* message = descriptor->message_type();
-  GOOGLE_CHECK(message->options().map_entry());
+  ABSL_CHECK(message->options().map_entry());
   return message->map_value();
 }
 

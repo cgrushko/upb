@@ -33,12 +33,14 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/absl_check.h"
+#include "absl/log/absl_log.h"
 #include "google/protobuf/testing/file.h"
 #include "google/protobuf/testing/file.h"
 #include <gmock/gmock.h>
 #include "google/protobuf/testing/googletest.h"
 #include <gtest/gtest.h>
-#include "google/protobuf/stubs/logging.h"
+
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "google/protobuf/compiler/command_line_interface.h"
@@ -77,7 +79,7 @@ int CompileJavaProto(std::string proto_file_name) {
 }
 
 TEST(MessageSerializationTest, CollapseAdjacentExtensionRanges) {
-  GOOGLE_CHECK_EQ(CompileJavaProto("message_serialization_unittest.proto"), 0);
+  ABSL_CHECK_EQ(CompileJavaProto("message_serialization_unittest.proto"), 0);
 
   std::string java_source;
   GOOGLE_ABSL_CHECK_OK(File::GetContents(

@@ -68,6 +68,9 @@ class ImmutableMessageLiteGenerator : public MessageGenerator {
   void GenerateDynamicMethodNewBuilder(io::Printer* printer);
   void GenerateInitializers(io::Printer* printer);
   void GenerateParser(io::Printer* printer);
+#ifdef JUPB  
+  void GenerateMinitableMethod(io::Printer* printer);
+#endif
   void GenerateConstructor(io::Printer* printer);
   void GenerateDynamicMethodNewBuildMessageInfo(io::Printer* printer);
   void GenerateKotlinExtensions(io::Printer* printer) const;

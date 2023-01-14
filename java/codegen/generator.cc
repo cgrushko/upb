@@ -45,6 +45,10 @@
 #include "google/protobuf/compiler/java/shared_code_generator.h"
 #include "google/protobuf/descriptor.pb.h"
 
+#ifdef JUPB
+#include "upb/upb.hpp"
+#include "upb/reflection/def.hpp"
+#endif
 
 namespace google {
 namespace protobuf {
@@ -59,10 +63,22 @@ uint64_t JavaGenerator::GetSupportedFeatures() const {
   return CodeGenerator::Feature::FEATURE_PROTO3_OPTIONAL;
 }
 
+                             
+
 bool JavaGenerator::Generate(const FileDescriptor* file,
                              const std::string& parameter,
                              GeneratorContext* context,
                              std::string* error) const {
+#ifdef JUPB
+  return false;
+}
+
+bool JavaGenerator::UpbGenerate(const upb::DefPool& upbPool32, const upb::DefPool& upbPool64,
+                                const FileDescriptor* file,
+                                const std::string& parameter,
+                                GeneratorContext* context,
+                                std::string* error) const {
+#endif
   // -----------------------------------------------------------------
   // parse generator options
 
@@ -118,11 +134,19 @@ bool JavaGenerator::Generate(const FileDescriptor* file,
   std::vector<FileGenerator*> file_generators;
   if (file_options.generate_immutable_code) {
     file_generators.push_back(new FileGenerator(file, file_options,
+#ifndef JUPB
                                                 /* immutable = */ true));
+#else
+                                                upbPool32, upbPool64, /* immutable = */ true));
+#endif
   }
   if (file_options.generate_mutable_code) {
     file_generators.push_back(new FileGenerator(file, file_options,
+#ifndef JUPB
                                                 /* mutable = */ false));
+#else
+                                                upbPool32, upbPool64, /* mutable = */ false));
+#endif
   }
 
   for (int i = 0; i < file_generators.size(); ++i) {
@@ -203,6 +227,73 @@ bool JavaGenerator::Generate(const FileDescriptor* file,
 
   return true;
 }
+
+#ifdef JUPB
+bool JavaGenerator::GenerateAll(const std::vector<const FileDescriptor*>& files,
+                                const std::string& parameter,
+                                GeneratorContext* generator_context,
+                                std::string* error) const {
+
+  // Construct a DefPool from |files|. We get |files| as FileDescripto, which we serialize to c++ FileDescriptorProto,
+  // then deserialize into upb FileDescriptorProto, and eventually we pass it to DefPool.AddFile.
+  upb::Arena arena;
+  upb::DefPool pool32;
+  pool32._SetPlatform(kUpb_MiniTablePlatform_32Bit);
+  upb::DefPool pool64;
+  pool64._SetPlatform(kUpb_MiniTablePlatform_64Bit);
+
+  upb::Status status;
+  std::vector<upb::FileDefPtr> upbFiles;
+  for (auto cpp_file_descriptor : files) {
+    FileDescriptorProto cpp_file_descriptor_proto;
+    cpp_file_descriptor->CopyTo(&cpp_file_descriptor_proto);
+    cpp_file_descriptor->CopySourceCodeInfoTo(&cpp_file_descriptor_proto);
+    std::string data = cpp_file_descriptor_proto.SerializeAsString();
+    
+    const google_protobuf_FileDescriptorProto* upb_file_descriptor = google_protobuf_FileDescriptorProto_parse(data.c_str(), data.size(), arena.ptr());
+
+    pool32.AddFile(upb_file_descriptor, &status);
+    if (!status.ok()) {
+      *error = status.error_message();
+      return false;
+    }
+    pool64.AddFile(upb_file_descriptor, &status);
+    if (!status.ok()) {
+      *error = status.error_message();
+      return false;
+    }
+  }
+
+  return InheritedGenerateAll(pool32, pool64, files, parameter, generator_context, error);
+}
+
+bool JavaGenerator::InheritedGenerateAll(const upb::DefPool& upbPool32, const upb::DefPool& upbPool64, const std::vector<const FileDescriptor*>& files,
+                                const std::string& parameter,
+                                GeneratorContext* generator_context,
+                                std::string* error) const {
+  // Default implementation is just to call the per file method, and prefix any
+  // error string with the file to provide context.
+  bool succeeded = true;
+  for (int i = 0; i < files.size(); i++) {
+    const FileDescriptor* file = files[i];
+    succeeded = UpbGenerate(upbPool32, upbPool64, file, parameter, generator_context, error);
+    if (!succeeded && error && error->empty()) {
+      *error =
+          "Code generator returned false but provided no error "
+          "description.";
+    }
+    if (error && !error->empty()) {
+      *error = file->name() + ": " + *error;
+      break;
+    }
+    if (!succeeded) {
+      break;
+    }
+  }
+  return succeeded;
+}
+
+#endif
 
 }  // namespace java
 }  // namespace compiler

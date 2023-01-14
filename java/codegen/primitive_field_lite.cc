@@ -37,7 +37,7 @@
 #include <cstdint>
 #include <string>
 
-#include "google/protobuf/stubs/logging.h"
+
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/compiler/java/context.h"
@@ -45,6 +45,9 @@
 #include "google/protobuf/compiler/java/helpers.h"
 #include "google/protobuf/compiler/java/name_resolver.h"
 #include "google/protobuf/wire_format.h"
+
+// Must be last.
+#include "upb/port/def.inc"
 
 namespace google {
 namespace protobuf {
@@ -62,6 +65,14 @@ bool EnableExperimentalRuntimeForLite() {
   return false;
 #endif  // !PROTOBUF_EXPERIMENT
 }
+
+#ifdef JUPB
+namespace {
+std::string FormatUpbSize(int size32, int size64) {
+return absl::StrFormat("Messages.UPB_SIZE(%d,%d)", size32, size64);
+}
+}
+#endif
 
 void SetPrimitiveVariables(
     const FieldDescriptor* descriptor, int messageBitIndex, int builderBitIndex,
@@ -83,6 +94,23 @@ void SetPrimitiveVariables(
   (*variables)["tag_size"] = absl::StrCat(
       WireFormat::TagSize(descriptor->number(), GetType(descriptor)));
   (*variables)["required"] = descriptor->is_required() ? "true" : "false";
+#ifdef JUPB
+  upb::FieldDefPtr upbField32 = context->GetUpbField32(*descriptor);
+  auto minitable32 = upbField32.mini_table();
+  int hasbitIndex32 = _upb_Message_Hasidx(minitable32);
+  upb::FieldDefPtr upbField64 = context->GetUpbField64(*descriptor);
+  auto minitable64 = upbField64.mini_table();
+  int hasbitIndex64 = _upb_Message_Hasidx(minitable64);  
+
+  std::string hasbitIndexStr = FormatUpbSize(hasbitIndex32, hasbitIndex64);
+  (*variables)["upb_hasbit_index"] = upbField32.has_presence() ? hasbitIndexStr : "";
+  (*variables)["upb_field_offset"] = FormatUpbSize( minitable32->offset, minitable64->offset);
+  (*variables)["hasbit_index_and_default_if_explicit"] = descriptor->has_default_value() 
+      ? absl::StrCat(", ",hasbitIndexStr, ", ", ImmutableDefaultValue(descriptor, name_resolver, context->options()))
+      : "";
+
+#endif
+
 
   std::string capitalized_type = UnderscoresToCamelCase(
       PrimitiveTypeName(javaType), true /* cap_next_letter */);
@@ -153,15 +181,29 @@ void SetPrimitiveVariables(
 
   if (HasHasbit(descriptor)) {
     // For singular messages and builders, one bit is used for the hasField bit.
-    (*variables)["get_has_field_bit_message"] = GenerateGetBit(messageBitIndex);
+    (*variables)["get_has_field_bit_message"] = 
+#ifndef JUPB
+        GenerateGetBit(messageBitIndex);
+#else
+        UpbGenerateGetBit(upbField32, upbField64);
+#endif      
 
     // Note that these have a trailing ";".
     (*variables)["set_has_field_bit_message"] =
         GenerateSetBit(messageBitIndex) + ";";
     (*variables)["clear_has_field_bit_message"] =
+#ifndef JUPB
         GenerateClearBit(messageBitIndex) + ";";
+#else
+        UpbGenerateClearBit(upbField32, upbField64) + ";";
+#endif      
 
-    (*variables)["is_field_present_message"] = GenerateGetBit(messageBitIndex);
+    (*variables)["is_field_present_message"] = 
+#ifndef JUPB
+        GenerateGetBit(messageBitIndex);
+#else
+        UpbGenerateGetBit(upbField32, upbField64);
+#endif      
   } else {
     (*variables)["set_has_field_bit_message"] = "";
     (*variables)["clear_has_field_bit_message"] = "";
@@ -253,8 +295,10 @@ void ImmutablePrimitiveFieldLiteGenerator::GenerateMembers(
                      "  mask=$bit_field_mask$)\n");
     }
   }
+#ifndef JUPB
   printer->Print(variables_, "private $field_type$ $name$_;\n");
   PrintExtraFieldInfo(variables_, printer);
+#endif
   if (HasHazzer(descriptor_)) {
     WriteFieldAccessorDocComment(printer, descriptor_, HAZZER);
     printer->Print(
@@ -270,22 +314,31 @@ void ImmutablePrimitiveFieldLiteGenerator::GenerateMembers(
   printer->Print(variables_,
                  "@java.lang.Override\n"
                  "$deprecation$public $type$ ${$get$capitalized_name$$}$() {\n"
+#ifndef JUPB
                  "  return $name$_;\n"
+#else
+                 "  return Messages.get$capitalized_type$(msg, $upb_field_offset$ $hasbit_index_and_default_if_explicit$);\n"
+#endif
                  "}\n");
   printer->Annotate("{", "}", descriptor_);
 
   WriteFieldAccessorDocComment(printer, descriptor_, SETTER);
   printer->Print(variables_,
                  "private void set$capitalized_name$($type$ value) {\n"
+#ifndef JUPB
                  "$null_check$"
                  "  $set_has_field_bit_message$\n"
                  "  $name$_ = value;\n"
+#else
+                 "  Messages.set$capitalized_type$(msg, $upb_field_offset$, $upb_hasbit_index$, value);\n"
+#endif
                  "}\n");
 
   WriteFieldAccessorDocComment(printer, descriptor_, CLEARER);
   printer->Print(variables_,
                  "private void clear$capitalized_name$() {\n"
                  "  $clear_has_field_bit_message$\n");
+#ifndef JUPB
   JavaType type = GetJavaType(descriptor_);
   if (type == JAVATYPE_STRING || type == JAVATYPE_BYTES) {
     // The default value is not a simple literal so we want to avoid executing
@@ -296,6 +349,7 @@ void ImmutablePrimitiveFieldLiteGenerator::GenerateMembers(
   } else {
     printer->Print(variables_, "  $name$_ = $default$;\n");
   }
+#endif
   printer->Print(variables_, "}\n");
 }
 
@@ -416,12 +470,14 @@ ImmutablePrimitiveOneofFieldLiteGenerator::
 void ImmutablePrimitiveOneofFieldLiteGenerator::GenerateMembers(
     io::Printer* printer) const {
   PrintExtraFieldInfo(variables_, printer);
-  GOOGLE_DCHECK(HasHazzer(descriptor_));
+  ABSL_DCHECK(HasHazzer(descriptor_));
   WriteFieldAccessorDocComment(printer, descriptor_, HAZZER);
   printer->Print(variables_,
                  "@java.lang.Override\n"
                  "$deprecation$public boolean ${$has$capitalized_name$$}$() {\n"
+#ifndef JUPB
                  "  return $has_oneof_case_message$;\n"
+#endif
                  "}\n");
   printer->Annotate("{", "}", descriptor_);
 
@@ -429,10 +485,12 @@ void ImmutablePrimitiveOneofFieldLiteGenerator::GenerateMembers(
   printer->Print(variables_,
                  "@java.lang.Override\n"
                  "$deprecation$public $type$ ${$get$capitalized_name$$}$() {\n"
+#ifndef JUPB
                  "  if ($has_oneof_case_message$) {\n"
                  "    return ($boxed_type$) $oneof_name$_;\n"
                  "  }\n"
                  "  return $default$;\n"
+#endif
                  "}\n");
   printer->Annotate("{", "}", descriptor_);
 
@@ -447,10 +505,12 @@ void ImmutablePrimitiveOneofFieldLiteGenerator::GenerateMembers(
   WriteFieldAccessorDocComment(printer, descriptor_, CLEARER);
   printer->Print(variables_,
                  "private void clear$capitalized_name$() {\n"
+#ifndef JUPB
                  "  if ($has_oneof_case_message$) {\n"
                  "    $clear_oneof_case_message$;\n"
                  "    $oneof_name$_ = null;\n"
                  "  }\n"
+#endif
                  "}\n");
 }
 
@@ -464,7 +524,7 @@ void ImmutablePrimitiveOneofFieldLiteGenerator::GenerateFieldInfo(
 
 void ImmutablePrimitiveOneofFieldLiteGenerator::GenerateBuilderMembers(
     io::Printer* printer) const {
-  GOOGLE_DCHECK(HasHazzer(descriptor_));
+  ABSL_DCHECK(HasHazzer(descriptor_));
   WriteFieldAccessorDocComment(printer, descriptor_, HAZZER);
   printer->Print(variables_,
                  "@java.lang.Override\n"
@@ -803,3 +863,5 @@ std::string RepeatedImmutablePrimitiveFieldLiteGenerator::GetBoxedType() const {
 }  // namespace compiler
 }  // namespace protobuf
 }  // namespace google
+
+#include "upb/port/undef.inc"

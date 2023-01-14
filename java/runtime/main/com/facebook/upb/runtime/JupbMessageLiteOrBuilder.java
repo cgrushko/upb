@@ -26,34 +26,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.facebook.upb.runtime;
+ package com.facebook.upb.runtime;
 
-public class UpbMessage {
-  protected final long msg;
-  protected final Arena arena;
-
-  protected UpbMessage(Arena arena, Minitable minitable) {
-    this.arena = arena;
-    this.msg = Messages.createMessage(minitable, arena);
-  }
-
-  public static class Builder<MessageType extends UpbMessage, BuilderType extends Builder<MessageType, BuilderType>> {
-    protected MessageType instance;
-    private boolean isDirty;
-
-    protected Builder(MessageType instance) {
-      this.instance = instance;
-    }
-
-    protected void copyOnWrite() {
-      if (isDirty) {
-        return;
-      }
-      // todo: implement.
-    }
-
-    public MessageType build() {
-      return instance;
-    }
-  }
-}
+ public interface JupbMessageLiteOrBuilder {
+ }
+ 

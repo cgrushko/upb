@@ -39,6 +39,10 @@
 #include "google/protobuf/compiler/java/options.h"
 #include "google/protobuf/port.h"
 
+#ifdef JUPB
+#include "upb/reflection/def.hpp"
+#endif
+
 namespace google {
 namespace protobuf {
 class FileDescriptor;
@@ -65,7 +69,11 @@ struct OneofGeneratorInfo;
 // generators.
 class Context {
  public:
+#ifndef JUPB
   Context(const FileDescriptor* file, const Options& options);
+#else
+  Context(const FileDescriptor* file, const upb::DefPool& upbPool32, const upb::DefPool& upbPool64, const Options& options);
+#endif
   Context(const Context&) = delete;
   Context& operator=(const Context&) = delete;
   ~Context();
@@ -93,11 +101,43 @@ class Context {
   // standard methods for which reflection-based fallback implementations exist?
   bool HasGeneratedMethods(const Descriptor* descriptor) const;
 
+#ifdef JUPB
+  upb::MessageDefPtr GetUpbMessage32(const Descriptor& m) const {
+    return upbPool32_.FindMessageByName(m.full_name().c_str());
+  }
+
+  upb::MessageDefPtr GetUpbMessage64(const Descriptor& m) const {
+    return upbPool64_.FindMessageByName(m.full_name().c_str());
+  }
+
+  upb::FieldDefPtr GetUpbField32(const FieldDescriptor& f) const {
+    return GetUpbFieldFromPool(&upbPool32_, f);
+  }
+
+  upb::FieldDefPtr GetUpbField64(const FieldDescriptor& f) const {
+    return GetUpbFieldFromPool(&upbPool64_, f);
+  }
+  // absl::flat_hash_map<const FieldDescriptor*, const upb::FieldDefPtr> cppFieldToUpb_;
+  // absl::flat_hash_map<const Descriptor*, const upb::MessageDefPtr> cppMessageToUpb_;
+#endif
+
  private:
   void InitializeFieldGeneratorInfo(const FileDescriptor* file);
   void InitializeFieldGeneratorInfoForMessage(const Descriptor* message);
   void InitializeFieldGeneratorInfoForFields(
       const std::vector<const FieldDescriptor*>& fields);
+
+#ifdef JUPB
+  static upb::FieldDefPtr GetUpbFieldFromPool(const upb::DefPool* pool,
+                                                    const FieldDescriptor& f) {
+    if (f.is_extension()) {
+      return pool->FindExtensionByName(f.full_name().c_str());
+    } else {
+      return pool->FindMessageByName(f.containing_type()->full_name().c_str())
+          .FindFieldByNumber(f.number());
+    }
+  }
+#endif
 
   std::unique_ptr<ClassNameResolver> name_resolver_;
   absl::flat_hash_map<const FieldDescriptor*, FieldGeneratorInfo>
@@ -105,6 +145,10 @@ class Context {
   absl::flat_hash_map<const OneofDescriptor*, OneofGeneratorInfo>
       oneof_generator_info_map_;
   Options options_;
+#ifdef JUPB
+  const upb::DefPool& upbPool32_;
+  const upb::DefPool& upbPool64_;
+#endif
 };
 
 template <typename Descriptor>

@@ -52,6 +52,9 @@ bool KotlinGenerator::Generate(const FileDescriptor* file,
                                const std::string& parameter,
                                GeneratorContext* context,
                                std::string* error) const {
+#ifdef JUPB
+  return false;
+#else
   // -----------------------------------------------------------------
   // parse generator options
 
@@ -152,6 +155,7 @@ bool KotlinGenerator::Generate(const FileDescriptor* file,
   }
 
   return true;
+#endif                                
 }
 
 }  // namespace java

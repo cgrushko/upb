@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package upb_test;
+
+message BabySteps {
+    optional int32 foo = 1 [default = 43];
+    optional int32 bar = 2;
+}

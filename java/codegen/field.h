@@ -39,8 +39,9 @@
 #include <memory>
 #include <string>
 
+#include "upb/reflection/def.hpp"
+#include "absl/log/absl_check.h"
 #include "absl/container/flat_hash_map.h"
-#include "google/protobuf/stubs/logging.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/port.h"
 
@@ -121,6 +122,7 @@ template <typename FieldGeneratorType>
 class FieldGeneratorMap {
  public:
   explicit FieldGeneratorMap(const Descriptor* descriptor, Context* context);
+  
   FieldGeneratorMap(const FieldGeneratorMap&) = delete;
   FieldGeneratorMap& operator=(const FieldGeneratorMap&) = delete;
   ~FieldGeneratorMap();
@@ -135,7 +137,7 @@ class FieldGeneratorMap {
 template <typename FieldGeneratorType>
 inline const FieldGeneratorType& FieldGeneratorMap<FieldGeneratorType>::get(
     const FieldDescriptor* field) const {
-  GOOGLE_CHECK_EQ(field->containing_type(), descriptor_);
+  ABSL_CHECK_EQ(field->containing_type(), descriptor_);
   return *field_generators_[field->index()];
 }
 

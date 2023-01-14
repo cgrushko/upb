@@ -87,6 +87,16 @@ jlong _upb_Message_New(
       (upb_Arena*)arenaPointer);
 }
 
+jlong upb_Message_New(
+    JNIEnv* env,
+    jobject /* thisz */,
+    jlong arenaPointer,
+    jlong minitablesPointer) {
+  return (jlong)::upb_Message_New(
+      (const upb_MiniTable*) minitablesPointer,
+      (upb_Arena*)arenaPointer);
+}
+
 jstring _Nullable get_UPB_PTR_AT_String_internal(
     JNIEnv* env,
     jobject /* thisz */,
@@ -133,6 +143,14 @@ void _upb_sethas(
     jlong messagePointer,
     jint index) {
   ::_upb_sethas((const upb_Message*)messagePointer, index);
+}
+
+jboolean _upb_hasbit(
+    JNIEnv* env,
+    jobject /* thisz */,
+    jlong messagePointer,
+    jint index) {
+  return ::_upb_hasbit((const upb_Message*)messagePointer, index);
 }
 
 void upb_Decode(
@@ -197,8 +215,9 @@ jbyteArray _Nullable upb_Encode(
 namespace {
 auto constexpr kClassName = "com/facebook/upb/runtime/Messages";
 
-std::array<JNINativeMethod, 7> methods = {{
+std::array<JNINativeMethod, 9> methods = {{
     {"_upb_Message_New", "(JIIJ)J", (void*)Messages::_upb_Message_New},
+    {"upb_Message_New", "(JJ)J", (void*)Messages::upb_Message_New},
     {"UPB_PTR_AT_String_internal",
      "(J)Ljava/lang/String;",
      (void*)Messages::get_UPB_PTR_AT_String_internal},
@@ -207,6 +226,7 @@ std::array<JNINativeMethod, 7> methods = {{
      (void*)Messages::set_UPB_PTR_AT_String_internal},
     {"getIs64", "()Z", (void*)Messages::getIs64},
     {"_upb_sethas", "(JI)V", (void*)Messages::_upb_sethas},
+    {"_upb_hasbit", "(JI)Z", (void*)Messages::_upb_hasbit},
     {"upb_Decode", "([BJJIIJ)V", (void*)Messages::upb_Decode},
     {"upb_Encode", "(JJIIJ)[B", (void*)Messages::upb_Encode},
 }};

@@ -49,6 +49,16 @@ proto_library(
     srcs = ["empty.proto"],
 )
 
+proto_library(
+    name = "tiny_proto",
+    srcs = ["tiny.proto"],
+)
+
+java_lite_proto_library(
+    name = "tiny_jupb_proto", 
+    deps = [":tiny_proto"],
+)
+
 upb_proto_reflection_library(
     name = "empty_upb_proto_reflection",
     testonly = 1,

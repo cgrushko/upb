@@ -10,3 +10,16 @@ java_test(
     data = ["//java/runtime/main/com/facebook/upb/runtime/jni:libjavaupbruntime.dylib"],
     jvm_flags = ["-Djava.library.path=$${RUNPATH}/java/runtime/main/com/facebook/upb/runtime/jni"],
 )
+
+java_test(
+    name = "MessagesTest",
+    srcs = ["MessagesTest.java"],
+    test_class = "com.facebook.upb.runtime.MessagesTest",
+    deps = [
+        "//java/runtime/main/com/facebook/upb/runtime:runtime",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+    data = ["//java/runtime/main/com/facebook/upb/runtime/jni:libjavaupbruntime.dylib"],
+    jvm_flags = ["-Djava.library.path=$${RUNPATH}/java/runtime/main/com/facebook/upb/runtime/jni"],
+)

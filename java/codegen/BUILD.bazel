@@ -17,13 +17,17 @@ COPTS = [
         "-Woverloaded-virtual",
         "-Wno-sign-compare",
         "-Werror",
+        "-DJUPB",
     ]
+
+LINKOPTS = ["-framework CoreFoundation"]
 
 
 cc_binary(
     name = "protoc-gen-jupb",
     srcs = ["protoc-gen-jupb.cc"],
     copts = UPB_DEFAULT_CPPOPTS,
+    linkopts = LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":java",
@@ -44,6 +48,7 @@ cc_library(
     name = "names",
     hdrs = ["names.h"],
     copts = COPTS,
+    linkopts = LINKOPTS,
     include_prefix = "google/protobuf/compiler/java",
     visibility = ["//visibility:public"],
     deps = [
@@ -66,9 +71,11 @@ cc_library(
         "options.h",
     ],
     copts = COPTS,
+    linkopts = LINKOPTS,
     include_prefix = "google/protobuf/compiler/java",
     visibility = ["//pkg:__pkg__"],
     deps = [
+        "//upbc:file_layout",
         "@com_google_protobuf//src/google/protobuf/stubs:lite",
         "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
         "@com_google_protobuf//src/google/protobuf/compiler:code_generator",
@@ -139,13 +146,17 @@ cc_library(
         "string_field_lite.h",
     ],
     copts = COPTS,
+    linkopts = LINKOPTS,
     include_prefix = "google/protobuf/compiler/java",
     # visibility = [
     #     "//pkg:__pkg__",
     #     "//src/google/protobuf/compiler:__pkg__",
     # ],
     deps = [
+        "//:reflection",
+        "//upbc:file_layout",
         "@com_google_protobuf//src/google/protobuf/stubs:lite",
+        "@com_google_protobuf//src/google/protobuf/stubs:stubs",
         ":names",
         ":names_internal",
         "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",

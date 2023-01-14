@@ -38,7 +38,6 @@
 #include <vector>
 
 #include "absl/container/btree_set.h"
-#include "google/protobuf/stubs/logging.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/compiler/code_generator.h"
 #include "google/protobuf/compiler/java/context.h"
@@ -133,7 +132,7 @@ void CollectExtensions(const FileDescriptorProto& file_proto,
     // builder-pool to find out all extensions.
     const Descriptor* file_proto_desc = alternate_pool.FindMessageTypeByName(
         file_proto.GetDescriptor()->full_name());
-    GOOGLE_CHECK(file_proto_desc)
+    ABSL_CHECK(file_proto_desc)
         << "Find unknown fields in FileDescriptorProto when building "
         << file_proto.name()
         << ". It's likely that those fields are custom options, however, "
@@ -142,14 +141,14 @@ void CollectExtensions(const FileDescriptorProto& file_proto,
     DynamicMessageFactory factory;
     std::unique_ptr<Message> dynamic_file_proto(
         factory.GetPrototype(file_proto_desc)->New());
-    GOOGLE_CHECK(dynamic_file_proto.get() != NULL);
-    GOOGLE_CHECK(dynamic_file_proto->ParseFromString(file_data));
+    ABSL_CHECK(dynamic_file_proto.get() != NULL);
+    ABSL_CHECK(dynamic_file_proto->ParseFromString(file_data));
 
     // Collect the extensions again from the dynamic message. There should be no
     // more unknown fields this time, i.e. all the custom options should be
     // parsed as extensions now.
     extensions->clear();
-    GOOGLE_CHECK(CollectExtensions(*dynamic_file_proto, extensions))
+    ABSL_CHECK(CollectExtensions(*dynamic_file_proto, extensions))
         << "Find unknown fields in FileDescriptorProto when building "
         << file_proto.name()
         << ". It's likely that those fields are custom options, however, "
@@ -188,12 +187,20 @@ void MaybeRestartJavaMethod(io::Printer* printer, int* bytecode_estimate,
 }  // namespace
 
 FileGenerator::FileGenerator(const FileDescriptor* file, const Options& options,
+#ifndef JUPB
                              bool immutable_api)
+#else
+                             const upb::DefPool& upbPool32, const upb::DefPool& upbPool64, bool immutable_api)
+#endif
     : file_(file),
       java_package_(FileJavaPackage(file, immutable_api, options)),
       message_generators_(file->message_type_count()),
       extension_generators_(file->extension_count()),
+#ifndef JUPB
       context_(new Context(file, options)),
+#else
+      context_(new Context(file, upbPool32, upbPool64, options)),
+#endif
       name_resolver_(context_->GetNameResolver()),
       options_(options),
       immutable_api_(immutable_api) {
@@ -234,7 +241,7 @@ bool FileGenerator::Validate(std::string* error) {
   // because filenames are case-insensitive on those platforms.
   if (name_resolver_->HasConflictingClassName(
           file_, classname_, NameEquality::EQUAL_IGNORE_CASE)) {
-    GOOGLE_LOG(WARNING)
+    ABSL_LOG(WARNING)
         << file_->name() << ": The file's outer class name, \"" << classname_
         << "\", matches the name of one of the types declared inside it when "
         << "case is ignored. This can cause compilation issues on Windows / "
@@ -246,7 +253,7 @@ bool FileGenerator::Validate(std::string* error) {
   // Print a warning if optimize_for = LITE_RUNTIME is used.
   if (file_->options().optimize_for() == FileOptions::LITE_RUNTIME &&
       !options_.enforce_lite) {
-    GOOGLE_LOG(WARNING)
+    ABSL_LOG(WARNING)
         << "The optimize_for = LITE_RUNTIME option is no longer supported by "
         << "protobuf Java code generator and is ignored--protoc will always "
         << "generate full runtime code for Java. To use Java Lite runtime, "
@@ -272,6 +279,11 @@ void FileGenerator::Generate(io::Printer* printer) {
         "\n",
         "package", java_package_);
   }
+
+#ifdef JUPB
+  printer->Print("import com.facebook.upb.runtime.Messages;\n\n");
+#endif
+
   PrintGeneratedAnnotation(
       printer, '$', options_.annotate_code ? classname_ + ".java.pb.meta" : "",
       options_);
@@ -290,6 +302,8 @@ void FileGenerator::Generate(io::Printer* printer) {
 
   // -----------------------------------------------------------------
 
+#ifndef JUPB
+
   printer->Print(
       "public static void registerAllExtensions(\n"
       "    com.google.protobuf.ExtensionRegistryLite registry) {\n");
@@ -306,6 +320,7 @@ void FileGenerator::Generate(io::Printer* printer) {
 
   printer->Outdent();
   printer->Print("}\n");
+#endif
   if (HasDescriptorMethods(file_, context_->EnforceLite())) {
     // Overload registerAllExtensions for the non-lite usage to
     // redundantly maintain the original signature (this is

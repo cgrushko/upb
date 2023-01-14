@@ -30,21 +30,37 @@
 
 #include "google/protobuf/compiler/java/context.h"
 
-#include "google/protobuf/stubs/logging.h"
+#include "context.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/compiler/java/field.h"
 #include "google/protobuf/compiler/java/helpers.h"
 #include "google/protobuf/compiler/java/name_resolver.h"
 #include "google/protobuf/descriptor.h"
 
+// Must be last.
+#include "upb/port/def.inc"
+
 namespace google {
 namespace protobuf {
 namespace compiler {
 namespace java {
 
-Context::Context(const FileDescriptor* file, const Options& options)
+#ifndef JUPB
+  Context::Context(const FileDescriptor* file, const Options& options)
     : name_resolver_(new ClassNameResolver(options)), options_(options) {
+#else
+  Context::Context(const FileDescriptor* file, const upb::DefPool& upbPool32, const upb::DefPool& upbPool64, const Options& options)
+    : name_resolver_(new ClassNameResolver(options)), options_(options), upbPool32_(upbPool32), upbPool64_(upbPool64) {
+#endif
   InitializeFieldGeneratorInfo(file);
+
+  // for (int i = 0; i < file->message_type_count(); i++) {
+  //   cppMessageToUpb_.emplace(file->message_type(i), upbFile.toplevel_message(i));
+  //   for (int j = 0; j < file->message_type(i)->field_count(); j++) {
+  //     cppFieldToUpb_.emplace(file->message_type(i)->field(j), upbFile.toplevel_message(i).field(j));
+  //   }
+  // }  
+
 }
 
 Context::~Context() {}
@@ -147,7 +163,7 @@ void Context::InitializeFieldGeneratorInfoForFields(
       }
     }
     if (is_conflict[i]) {
-      GOOGLE_LOG(WARNING) << "field \"" << field->full_name()
+      ABSL_LOG(WARNING) << "field \"" << field->full_name()
                         << "\" is conflicting "
                         << "with another field: " << conflict_reason[i];
     }
@@ -172,7 +188,7 @@ const FieldGeneratorInfo* Context::GetFieldGeneratorInfo(
     const FieldDescriptor* field) const {
   auto it = field_generator_info_map_.find(field);
   if (it == field_generator_info_map_.end()) {
-    GOOGLE_LOG(FATAL) << "Can not find FieldGeneratorInfo for field: "
+    ABSL_LOG(FATAL) << "Can not find FieldGeneratorInfo for field: "
                     << field->full_name();
   }
   return &it->second;
@@ -182,7 +198,7 @@ const OneofGeneratorInfo* Context::GetOneofGeneratorInfo(
     const OneofDescriptor* oneof) const {
   auto it = oneof_generator_info_map_.find(oneof);
   if (it == oneof_generator_info_map_.end()) {
-    GOOGLE_LOG(FATAL) << "Can not find OneofGeneratorInfo for oneof: "
+    ABSL_LOG(FATAL) << "Can not find OneofGeneratorInfo for oneof: "
                     << oneof->name();
   }
   return &it->second;
@@ -199,3 +215,5 @@ bool Context::HasGeneratedMethods(const Descriptor* descriptor) const {
 }  // namespace compiler
 }  // namespace protobuf
 }  // namespace google
+
+#include "upb/port/undef.inc"

@@ -41,6 +41,11 @@
 
 #include "google/protobuf/compiler/code_generator.h"
 
+#ifdef JUPB
+#include "upb/upb.hpp"
+#include "upb/reflection/def.hpp"
+#endif
+
 // Must be included last.
 #include "google/protobuf/port_def.inc"
 
@@ -64,6 +69,16 @@ class PROTOC_EXPORT JavaGenerator : public CodeGenerator {
   bool Generate(const FileDescriptor* file, const std::string& parameter,
                 GeneratorContext* context, std::string* error) const override;
 
+#ifdef JUPB
+  bool GenerateAll(const std::vector<const FileDescriptor*>& files,
+                           const std::string& parameter,
+                           GeneratorContext* generator_context,
+                           std::string* error) const override;
+
+  bool UpbGenerate(const upb::DefPool& upbPool32, const upb::DefPool& upbPool64, const FileDescriptor* file, const std::string& parameter,
+                GeneratorContext* context, std::string* error) const;
+#endif
+
   uint64_t GetSupportedFeatures() const override;
 
   void set_opensource_runtime(bool opensource) {
@@ -71,6 +86,15 @@ class PROTOC_EXPORT JavaGenerator : public CodeGenerator {
   }
 
  private:
+
+#ifdef JUPB
+  bool InheritedGenerateAll(const upb::DefPool& upbPool32, const upb::DefPool& upbPool64,
+                            const std::vector<const FileDescriptor*>& files,
+                           const std::string& parameter,
+                           GeneratorContext* generator_context,
+                           std::string* error) const;
+#endif
+
   bool opensource_runtime_ = PROTO2_IS_OSS;
 };
 

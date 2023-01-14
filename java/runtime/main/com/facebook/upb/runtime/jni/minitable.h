@@ -26,27 +26,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "arena.h"
-#include "messages.h"
-#include "minitable.h"
-#include "jni_helper.h"
+#pragma once
 
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* _Nullable /* reserved */) {
-  JNIEnv* env;
+#include <jni.h>
 
-  if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
-    logErrorMessageAndDie(
-        "GetEnv failed");
-  }
+namespace Minitable {
 
-if (!env) {
-    logErrorMessageAndDie(
-        "Need to pass a valid JNIEnv pointer to initialization routine");
-  }
+void registerNatives(JNIEnv* env);
 
-
-  Arena::registerNatives(env);
-  Messages::registerNatives(env);
-  Minitable::registerNatives(env);
-  return JNI_VERSION_1_6;
-}
+} // namespace Arena

@@ -28,66 +28,23 @@
 
 package com.facebook.upb.runtime;
 
-import java.lang.ref.PhantomReference;
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
-import java.util.HashSet;
+import java.nio.charset.StandardCharsets;
 
-public class Arena {
-  static {
-    // Class-load Messages so JNI can find it.
-    Messages.forceLoadClass();
+public class Minitable {
+    private static class Holder {
+        private static final Arena ARENA = new Arena();
+    }
 
-    System.loadLibrary("javaupbruntime");
-  }
-
-  static final void forceLoadClass() {
-    // no-op
-  }
-
-  private static final ReferenceQueue<Arena> referenceQueue = new ReferenceQueue<>();
-  private static final HashSet<PhantomReference> refs = new HashSet<>();
-
-  static {
-    new Thread() {
-      @Override
-      public void run() {
-        while (true) {
-          try {
-            Reference<?> ref = referenceQueue.remove();
-            freeUpbArena(((ArenaPhantomReference) ref).pointerToFree);
-            synchronized(refs) {
-              refs.remove(ref);
-            }
-            ref.clear();
-          } catch (InterruptedException e) {
-            // Continue running; this thread should never be interrupted.
-          }
-        }
+    static {
+        System.loadLibrary("javaupbruntime");
       }
-    }.start();
-  }
+    
+    final long pointer;
 
-  public final long pointer;
-
-  public Arena() {
-    pointer = initNative();
-    synchronized(refs) {
-      refs.add(new ArenaPhantomReference(this, referenceQueue, pointer));
+    public Minitable(String serializedMinitable) {
+        this.pointer = upb_MiniTable_Build(serializedMinitable.getBytes(
+                StandardCharsets.UTF_8), Holder.ARENA.pointer);
     }
-  }
 
-  private native long initNative();
-
-  private static native void freeUpbArena(long pointer);
-
-  private static class ArenaPhantomReference extends PhantomReference<Arena> {
-    public final long pointerToFree;
-
-    public ArenaPhantomReference(
-        Arena referent, ReferenceQueue<? super Arena> q, long pointerToFree) {
-      super(referent, q);
-      this.pointerToFree = pointerToFree;
-    }
-  }
+    private static final native long upb_MiniTable_Build(byte[] serializedMinitable, long arenaPtr);
 }

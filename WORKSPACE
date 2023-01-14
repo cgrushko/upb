@@ -85,8 +85,8 @@ pip_parse(
 load("@pip_deps//:requirements.bzl", "install_deps")
 install_deps()
 
-load("@system_python//:fuzzing_py.bzl", "fuzzing_py_install_deps")
-fuzzing_py_install_deps()
+# load("@system_python//:fuzzing_py.bzl", "fuzzing_py_install_deps")
+# fuzzing_py_install_deps()
 
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 maven_install(
@@ -95,7 +95,7 @@ maven_install(
 ],
     # For updating instructions, see:
     # https://github.com/bazelbuild/rules_jvm_external#updating-maven_installjson
-    # maven_install_json = "//:maven_install.json",
+    maven_install_json = "//:maven_install.json",
     repositories = [
         "https://repo1.maven.org/maven2",
         "https://repo.maven.apache.org/maven2",
