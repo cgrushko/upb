@@ -59,10 +59,26 @@ public class Messages {
     return upb_Message_New(arena.pointer, minitable.pointer);
   }
 
+  public static long cloneMessage(UpbMessage message, Arena arena) {
+    return upb_Message_DeepClone(message.pointer, message.minitable.pointer, arena.pointer);
+  }
+
+  public static void decodeMessage(
+      byte[] buf,
+      UpbMessage message) throws ProtocolBufferDecodingException {
+    upb_Decode(buf, message.pointer, message.minitable.pointer, message.arena.pointer);
+  }
+
+  public static byte[] encodeMessage(UpbMessage message) throws ProtocolBufferEncodingException {
+    return upb_Encode(message.pointer, message.minitable.pointer, message.arena.pointer);
+  }
+
   private static native long upb_Message_New(long arenaPtr, long minitablePtr);
 
-  public static native long _upb_Message_New(
-      long minitablesPointer, int fileIndex, int msgIndex, long arenaPointer);
+  private static native long upb_Message_DeepClone(long messagePtr, long minitablePtr, long arenaPtr);
+
+  // public static native long _upb_Message_New(
+  // long minitablesPointer, int fileIndex, int msgIndex, long arenaPointer);
 
   public static boolean UPB_PTR_AT_boolean(long pointer) {
     return UNSAFE.getByte(pointer) != 0;
@@ -137,21 +153,20 @@ public class Messages {
   }
 
   public static native void _upb_sethas(long messagePointer, int index);
+
   public static native boolean _upb_hasbit(long messagePointer, int index);
+
   public static native void _upb_clearhas(long messagePointer, int index);
 
   /** Don't call directly - use is64bit directly. */
   private static native boolean getIs64();
 
-  public static native void upb_Decode(
+  private static native void upb_Decode(
       byte[] buf,
       long msgPointer,
-      long minitablesPointer,
-      int fileIndex,
-      int msgIndex,
-      long arenaPointer);
+      long minitablePointer,
+      long arenaPointer) throws ProtocolBufferDecodingException;
 
-  // @Nullable
-  public static native byte[] upb_Encode(
-      long msgPointer, long minitablesPointer, int fileIndex, int msgIndex, long arenaPointer);
+  private static native byte[] upb_Encode(
+      long msgPointer, long minitablePointer, long arenaPointer) throws ProtocolBufferEncodingException;
 }

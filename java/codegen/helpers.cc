@@ -645,13 +645,13 @@ std::string GenerateClearBit(int bitIndex) {
 std::string UpbGenerateGetBit(const upb::FieldDefPtr& field32, const upb::FieldDefPtr& field64) {
   int hasbitIndex32 = _upb_Message_Hasidx(field32.mini_table());
   int hasbitIndex64 = _upb_Message_Hasidx(field64.mini_table());
-  return absl::StrCat("Messages._upb_hasbit(msg, Messages.UPB_SIZE(", hasbitIndex32, ", ", hasbitIndex64, "))");
+  return absl::StrCat("Messages._upb_hasbit(pointer, Messages.UPB_SIZE(", hasbitIndex32, ", ", hasbitIndex64, "))");
 }
 
 std::string UpbGenerateClearBit(const upb::FieldDefPtr& field32, const upb::FieldDefPtr& field64) {
   int hasbitIndex32 = _upb_Message_Hasidx(field32.mini_table());
   int hasbitIndex64 = _upb_Message_Hasidx(field64.mini_table());
-  return absl::StrCat("Messages._upb_clearhas(msg, Messages.UPB_SIZE(", hasbitIndex32, ", ", hasbitIndex64, "))");
+  return absl::StrCat("Messages._upb_clearhas(pointer, Messages.UPB_SIZE(", hasbitIndex32, ", ", hasbitIndex64, "))");
 }
 
 #endif

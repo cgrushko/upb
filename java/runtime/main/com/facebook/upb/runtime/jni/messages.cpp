@@ -27,6 +27,7 @@
  */
 
 #include "messages.h"
+#include "upb/message/copy.h"
 #include "jni_helper.h"
 #include <jni.h>
 #include <stdint.h>
@@ -74,18 +75,18 @@ jstring _Nullable utf8ToJString(JNIEnv* env, const char* utf8) {
 
 namespace Messages {
 
-jlong _upb_Message_New(
-    JNIEnv* env,
-    jobject /* thisz */,
-    jlong minitablesPointer,
-    jint fileIndex,
-    jint msgIndex,
-    jlong arenaPointer) {
-  return (jlong)::_upb_Message_New(
-      (((const upb_MiniTableFile**)minitablesPointer)[fileIndex])
-          ->msgs[msgIndex],
-      (upb_Arena*)arenaPointer);
-}
+// jlong _upb_Message_New(
+//     JNIEnv* env,
+//     jobject /* thisz */,
+//     jlong minitablesPointer,
+//     jint fileIndex,
+//     jint msgIndex,
+//     jlong arenaPointer) {
+//   return (jlong)::_upb_Message_New(
+//       (((const upb_MiniTableFile**)minitablesPointer)[fileIndex])
+//           ->msgs[msgIndex],
+//       (upb_Arena*)arenaPointer);
+// }
 
 jlong upb_Message_New(
     JNIEnv* env,
@@ -93,6 +94,18 @@ jlong upb_Message_New(
     jlong arenaPointer,
     jlong minitablesPointer) {
   return (jlong)::upb_Message_New(
+      (const upb_MiniTable*) minitablesPointer,
+      (upb_Arena*)arenaPointer);
+}
+
+jlong upb_Message_DeepClone(
+    JNIEnv* env,
+    jobject /* thisz */,
+    jlong msgPointer,
+    jlong minitablesPointer,
+    jlong arenaPointer) {
+  return (jlong)::upb_Message_DeepClone(
+      (const upb_Message*) msgPointer,
       (const upb_MiniTable*) minitablesPointer,
       (upb_Arena*)arenaPointer);
 }
@@ -158,49 +171,51 @@ void upb_Decode(
     jobject /* thisz */,
     jbyteArray buf,
     jlong msgPointer,
-    jlong minitablesPointer,
-    jint fileIndex,
-    jint msgIndex,
+    jlong minitablePointer,
     jlong arenaPointer) {
   jint len = env->GetArrayLength(buf);
   void* data = env->GetPrimitiveArrayCritical(buf, NULL);
 
   // upb_DecodeStatus result =
-  ::upb_Decode(
+  upb_DecodeStatus result = ::upb_Decode(
       (const char*)data,
       len,
       (upb_Message*)msgPointer,
-      (((const upb_MiniTableFile**)minitablesPointer)[fileIndex])
-          ->msgs[msgIndex],
+      (const upb_MiniTable*)minitablePointer,
       nullptr /* extension registry */,
       0 /* options */,
       (upb_Arena*)arenaPointer);
 
   env->ReleasePrimitiveArrayCritical(buf, data, JNI_ABORT);
 
-  // TODO: handle result
+  if (result != kUpb_DecodeStatus_Ok) {
+    // TODO: throw ProtocolBufferDecodingException
+  }
 }
 
 jbyteArray _Nullable upb_Encode(
     JNIEnv* env,
     jobject /* thisz */,
     jlong msgPointer,
-    jlong minitablesPointer,
-    jint fileIndex,
-    jint msgIndex,
+    jlong minitablePointer,
     jlong arenaPointer) {
   size_t size;
   char* buf;
   upb_EncodeStatus result = ::upb_Encode(
       (upb_Message*)msgPointer,
-      (((const upb_MiniTableFile**)minitablesPointer)[fileIndex])
-          ->msgs[msgIndex],
+      (const upb_MiniTable*)minitablePointer,
       0 /* options */,
       (upb_Arena*)arenaPointer,
       &buf,
       &size);
 
-  if (!buf || size == 0 || result != kUpb_EncodeStatus_Ok) {
+  if (result != kUpb_EncodeStatus_Ok) {
+    // TODO: throw ProtocolBufferEncodingException
+    return NULL;
+  }
+
+  if (!buf || size == 0) {
+    // TODO: throw ProtocolBufferEncodingException
     return NULL;
   }
 
@@ -216,8 +231,9 @@ namespace {
 auto constexpr kClassName = "com/facebook/upb/runtime/Messages";
 
 std::array<JNINativeMethod, 9> methods = {{
-    {"_upb_Message_New", "(JIIJ)J", (void*)Messages::_upb_Message_New},
+    // {"_upb_Message_New", "(JIIJ)J", (void*)Messages::_upb_Message_New},    
     {"upb_Message_New", "(JJ)J", (void*)Messages::upb_Message_New},
+    {"upb_Message_DeepClone", "(JJJ)J", (void*)Messages::upb_Message_DeepClone},
     {"UPB_PTR_AT_String_internal",
      "(J)Ljava/lang/String;",
      (void*)Messages::get_UPB_PTR_AT_String_internal},
@@ -227,8 +243,8 @@ std::array<JNINativeMethod, 9> methods = {{
     {"getIs64", "()Z", (void*)Messages::getIs64},
     {"_upb_sethas", "(JI)V", (void*)Messages::_upb_sethas},
     {"_upb_hasbit", "(JI)Z", (void*)Messages::_upb_hasbit},
-    {"upb_Decode", "([BJJIIJ)V", (void*)Messages::upb_Decode},
-    {"upb_Encode", "(JJIIJ)[B", (void*)Messages::upb_Encode},
+    {"upb_Decode", "([BJJJ)V", (void*)Messages::upb_Decode},
+    {"upb_Encode", "(JJJ)[B", (void*)Messages::upb_Encode},
 }};
 
 } // namespace

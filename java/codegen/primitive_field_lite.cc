@@ -317,7 +317,7 @@ void ImmutablePrimitiveFieldLiteGenerator::GenerateMembers(
 #ifndef JUPB
                  "  return $name$_;\n"
 #else
-                 "  return Messages.get$capitalized_type$(msg, $upb_field_offset$ $hasbit_index_and_default_if_explicit$);\n"
+                 "  return Messages.get$capitalized_type$(pointer, $upb_field_offset$ $hasbit_index_and_default_if_explicit$);\n"
 #endif
                  "}\n");
   printer->Annotate("{", "}", descriptor_);
@@ -330,7 +330,7 @@ void ImmutablePrimitiveFieldLiteGenerator::GenerateMembers(
                  "  $set_has_field_bit_message$\n"
                  "  $name$_ = value;\n"
 #else
-                 "  Messages.set$capitalized_type$(msg, $upb_field_offset$, $upb_hasbit_index$, value);\n"
+                 "  Messages.set$capitalized_type$(pointer, $upb_field_offset$, $upb_hasbit_index$, value);\n"
 #endif
                  "}\n");
 

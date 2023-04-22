@@ -370,6 +370,16 @@ void ImmutableMessageLiteGenerator::Generate(io::Printer* printer) {
 
   GenerateParseFromMethods(printer);
   GenerateBuilder(printer);
+#ifdef JUPB
+  // protected UpbMessage cloneMessage(Arena arena) {
+  printer->Print(
+      "@java.lang.Override\n"
+      "public $classname$ cloneMessage(com.facebook.upb.runtime.Arena arena) {\n"
+      "  return new $classname$(minitable, Messages.cloneMessage(this, arena), arena);\n"
+      "}\n"
+      "\n",
+      "classname", name_resolver_->GetImmutableClassName(descriptor_));
+#endif
 
   if (HasRequiredFields(descriptor_)) {
     // Memoizes whether the protocol buffer is fully initialized (has all
@@ -673,11 +683,26 @@ void ImmutableMessageLiteGenerator::GenerateParseFromMethods(
       "  return com.google.protobuf.GeneratedMessageLite.parseFrom(\n"
       "      DEFAULT_INSTANCE, data, extensionRegistry);\n"
       "}\n"
+      "classname", name_resolver_->GetImmutableClassName(descriptor_));
+#endif
+  printer->Print(
+#ifndef JUPB
       "public static $classname$ parseFrom(byte[] data)\n"
       "    throws com.google.protobuf.InvalidProtocolBufferException {\n"
       "  return com.google.protobuf.GeneratedMessageLite.parseFrom(\n"
       "      DEFAULT_INSTANCE, data);\n"
-      "}\n"
+      "}\n",
+#else 
+      "public static $classname$ parseFrom(byte[] data)\n"
+      "    throws com.facebook.upb.runtime.ProtocolBufferDecodingException {\n"
+      "  $classname$ result = new $classname$(new com.facebook.upb.runtime.Arena());\n"
+      "  Messages.decodeMessage(data, result);\n"
+      "  return result;\n"
+      "}\n",
+#endif
+      "classname", name_resolver_->GetImmutableClassName(descriptor_));
+#ifndef JUPB
+  printer->Print(
       "public static $classname$ parseFrom(\n"
       "    byte[] data,\n"
       "    com.google.protobuf.ExtensionRegistryLite extensionRegistry)\n"
@@ -802,10 +827,15 @@ void ImmutableMessageLiteGenerator::GenerateConstructor(io::Printer* printer) {
   printer->Print("private $classname$(com.facebook.upb.runtime.Arena arena) {\n", "classname", descriptor_->name());
   printer->Indent();
   printer->Print("super(arena, minitable());\n");
-#endif
-
   printer->Outdent();
   printer->Print("}\n");
+
+  printer->Print("private $classname$(com.facebook.upb.runtime.Minitable minitable, long pointer, com.facebook.upb.runtime.Arena arena) {\n", "classname", descriptor_->name());
+  printer->Indent();
+  printer->Print("super(minitable, pointer, arena);\n");
+  printer->Outdent();
+  printer->Print("}\n");
+#endif
 }
 
 // ===================================================================

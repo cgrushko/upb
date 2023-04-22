@@ -16,6 +16,7 @@ cc_library(
     "//:jni_headers",
     "//:upb",
     "//:message_internal",
+    "//:message_copy",
   ],
   # linkstatic = 1,
   alwayslink = True,

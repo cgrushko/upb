@@ -30,51 +30,8 @@ package com.facebook.upb.runtime;
 
 import java.io.IOException;
 
-public abstract class UpbMessage {
-  protected final Minitable minitable;
-  protected final long pointer;
-  protected final Arena arena;
-
-  protected UpbMessage(Minitable minitable, long pointer, Arena arena) {
-    this.minitable = minitable;
-    this.pointer = pointer;
-    this.arena = arena;
-  }
-
-  protected UpbMessage(Arena arena, Minitable minitable) {
-    this(minitable, Messages.createMessage(minitable, arena), arena);
-  }
-
-  protected abstract <MessageType extends UpbMessage> MessageType cloneMessage(Arena arena);
-
-  public byte[] toByteArray() {
-    try {
-      return Messages.encodeMessage(this);
-    } catch (ProtocolBufferEncodingException e) {
-      throw new RuntimeException(e);
+public class ProtocolBufferDecodingException extends IOException {
+    public ProtocolBufferDecodingException(String description) {
+        super(description);
     }
-  }
-
-  public static class Builder<MessageType extends UpbMessage, BuilderType extends Builder<MessageType, BuilderType>> {
-    protected MessageType instance;
-    private boolean isDirty;
-
-    protected Builder(MessageType instance) {
-      this.instance = instance;
-    }
-
-    protected void copyOnWrite() {
-      if (isDirty) {
-        return;
-      }
-      isDirty = true;
-      instance = instance.cloneMessage(instance.arena);
-      // todo: implement.
-    }
-
-    public MessageType build() {
-      isDirty = false;
-      return instance;
-    }
-  }
 }
